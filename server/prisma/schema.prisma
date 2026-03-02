@@ -1,0 +1,69 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  BUYER
+  SELLER
+  ADMIN
+}
+
+enum AssetStatus {
+  ACTIVE
+  INACTIVE
+  PENDING
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  FAILED
+}
+
+model User {
+  id        String   @id @default(uuid())
+  auth0Id   String   @unique
+  email     String   @unique
+  role      Role     @default(BUYER)
+  assets    Asset[]
+  orders    Order[]
+  createdAt DateTime @default(now())
+}
+
+model Asset {
+  id          String      @id @default(uuid())
+  title       String
+  description String
+  price       Float
+  fileKey     String      // S3 Path
+  previewUrl  String      // Public Link
+  status      AssetStatus @default(PENDING)
+  seller      User        @relation(fields: [sellerId], references: [id])
+  sellerId    String
+  category    Category    @relation(fields: [categoryId], references: [id])
+  categoryId  String
+  orders      Order[]
+}
+
+model Order {
+  id              String      @id @default(uuid())
+  buyer           User        @relation(fields: [buyerId], references: [id])
+  buyerId         String
+  asset           Asset       @relation(fields: [assetId], references: [id])
+  assetId         String
+  stripeSessionId String      @unique
+  status          OrderStatus @default(PENDING)
+  createdAt       DateTime    @default(now())
+}
+
+model Category {
+  id     String  @id @default(uuid())
+  name   String
+  slug   String  @unique
+  assets Asset[]
+}

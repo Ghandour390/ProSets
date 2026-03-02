@@ -1,59 +1,78 @@
-
 services:
   client:
     build:
       context: ./client
     ports:
-      - "3000:3000"
+      - "5500:5500"
     volumes:
       - ./client:/app
       - /app/node_modules
+    environment:
+      - NODE_ENV=development
     depends_on:
       - server
+    networks:
+      - prosets
 
   server:
     build:
       context: ./server
     ports:
-      - "5000:5000"
-    volumes:
-      - ./server:/app
-      - /app/node_modules
+      - "3000:3000"
+    env_file:
+      - .env
     depends_on:
-      - postgres
-      - redis
-      - minio
+      postgres:
+        condition: service_healthy
+    networks:
+      - prosets
 
   postgres:
-    image: postgres:13
+    image: postgres:15-alpine
     container_name: postgres
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: mydb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: testpass123
+      POSTGRES_DB: prosets
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
     ports:
-      - "5432:5432"
+      - "5434:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d prosets" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - prosets
 
   redis:
-    image: redis:6
+    image: redis:alpine
     container_name: redis
     ports:
       - "6379:6379"
+    networks:
+      - prosets
 
   minio:
     image: minio/minio
     container_name: minio
     ports:
       - "9000:9000"
+      - "9001:9001"
     environment:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
-    command: server /data
+    command: server /data --console-address ":9001"
     volumes:
       - minio_data:/data
-
+    networks:
+      - prosets
 volumes:
   postgres_data:
   minio_data:
+
+networks:
+  prosets:
+    driver: bridge

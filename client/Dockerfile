@@ -1,5 +1,5 @@
 # Dockerfile for the client
-FROM node:16
+FROM node:20-alpine
 
 # Set working directory
 WORKDIR /app
@@ -13,8 +13,8 @@ RUN npm install
 # Copy the rest of the application code
 COPY . .
 
-# Expose the port the app runs on
-EXPOSE 3000
+# Expose the port the client runs on
+EXPOSE 5500
 
-# Start the application
-CMD ["npm", "start"]
+# Start the client in development mode
+CMD ["npm", "run", "dev"]

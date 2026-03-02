@@ -1,5 +1,5 @@
 # Dockerfile for the server
-FROM node:16
+FROM node:20-alpine3.20
 
 # Set working directory
 WORKDIR /app
@@ -10,11 +10,17 @@ COPY package*.json ./
 # Install dependencies
 RUN npm install
 
+# Copy prisma schema
+COPY prisma ./prisma/
+
+# Generate Prisma Client
+RUN npx prisma generate
+
 # Copy the rest of the application code
 COPY . .
 
 # Expose the port the server runs on
-EXPOSE 5000
+EXPOSE 3000
 
 # Start the server
-CMD ["npm", "start"]
+CMD ["npm", "run", "dev"]
